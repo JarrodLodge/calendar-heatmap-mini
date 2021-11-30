@@ -244,7 +244,7 @@ function calendarHeatmapMini() {
                     }
                     return x;
                   })
-                  .attr('y', y - 12)
+                  .attr('y', y - 20)
                   .attr('class', 'day-cell-tooltip-rect')
                   .style('pointer-events', 'none')
                   .style('stroke-width', '1')
