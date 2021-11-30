@@ -30,7 +30,7 @@ function calendarHeatmapMini() {
   var max = null;
   var colorRange = ['#D8E6E7', '#218380'];
   var tooltipEnabled = true;
-  var tooltipUnit = 'Event';
+  var tooltipUnit = 'Asset movement';
   var legendEnabled = true;
   var singleSelection = true;
   var onClick = null;
@@ -122,7 +122,7 @@ function calendarHeatmapMini() {
     // initialize data with 0 counts if there is none
     if (chart.data().length === 0) {
       var chartData = d3.timeDays(yearAgo, now).map(function (dateElement) {
-        return { date: dateElement, count: 0 };
+        return { date: dateElement, count: {onContract: 0, returned: 0} };
       });
       chart.data(chartData);
     }
@@ -146,14 +146,39 @@ function calendarHeatmapMini() {
         .attr('viewBox', legendEnabled ? '-15 -15 825 160' : '-15 -15 825 135')
 
       dayRects = svg.selectAll('.day-cell')
-        .data(dateRange); // array of days for the last yr
+        .data(dateRange);
 
+        // TODO: Split rect in half
+        // var svgWidth = svg.node().getBoundingClientRect().height;
+        // var rect1Width = svgWidth * 50 / 100;
+        // var rect = d3.select('svg')
+        //    .append('rect')
+        //    .attr('width', rect1Width)
+        //    .attr('height', 100)
+        //    .style('fill', 'skyblue');
+        
+        // var rect1 = d3.select('svg')
+        //    .append('rect')
+        //    .attr('x', rect1Width)
+        //    .attr('width', svgWidth - rect1Width)
+        //    .attr('height', 100)
+        //    .style('fill', 'red');
       dayRects.enter()
         .append('rect')
         .attr('class', 'day-cell')
         .attr('width', SQUARE_LENGTH)
         .attr('height', SQUARE_LENGTH)
-        .attr('fill', function (d) { return color(countForDate(d)); })
+        .attr('fill', function (d) {
+          if (countForDate(d).onContract > 0 && countForDate(d).returned <= 0) {
+            return '#cf3d48';
+          } else if (countForDate(d).returned > 0 && countForDate(d).onContract <= 0) {
+            return '#2E7D32';
+          } else if (countForDate(d).returned === 0 && countForDate(d).onContract === 0) {
+            return '#ECEFF1';
+          } else {
+            return '#F9A825';
+          }
+        })
         .attr('x', function (d, i) {
           var cellDate = moment(d);
           var result = cellDate.week() - firstDate.week() + (firstDate.weeksInYear() * (cellDate.weekYear() - firstDate.weekYear()));
@@ -334,11 +359,19 @@ function calendarHeatmapMini() {
     function tooltipText(d) {
       var dateStr = moment(d).format('MM/DD/YY');
       var count = countForDate(d);
-      return (count ? count.toLocaleString() : locale.No) + ' ' + pluralizedTooltipUnit(count) + ' ' + locale.on + ' ' + dateStr;
+      if (count.onContract > 0 && count.returned <= 0) {
+        return dateStr + `: ${count.onContract} assets on contract`
+      } else if (count.returned > 0 && count.onContract <= 0) {
+        return dateStr + `: ${count.onContract} assets returned`
+      } else if (count.returned > 0 && count.onContract > 0) {
+        return dateStr + `: ${count.onContract} assets on contract, ${count.returned} assets returned`
+      } else {
+        return dateStr + ': No activity'
+      }
     }
 
     function countForDate(d) {
-      var count = 0;
+      var count = {onContract: 0, returned: 0};
       var match = chart.data().find(function (element, index) {
         return moment(element.date).isSame(d, 'day');
       });
