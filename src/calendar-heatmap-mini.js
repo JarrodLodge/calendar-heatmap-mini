@@ -357,7 +357,7 @@ function calendarHeatmapMini() {
     }
 
     function tooltipText(d) {
-      var dateStr = moment(d).format('MM/DD/YY');
+      var dateStr = moment(d).format('DD/MM/YY');
       var count = countForDate(d);
       if (count.onContract > 0 && count.returned <= 0) {
         return dateStr + `: ${count.onContract} assets on contract`
